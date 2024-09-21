@@ -1,5 +1,5 @@
 use serialport::{DataBits, FlowControl, Parity, StopBits};
-use std::time::Duration;
+use std::{io, time::Duration};
 
 fn main() {
     let packet_data: [&[u8]; 6] = [
@@ -13,14 +13,22 @@ fn main() {
         &[0xE0, 0x11, 0x01, 0x01, 0x3C, 0x4F],
     ];
 
-    let mut button_led_com = serialport::new("COM21", 115200)
+    let mut button_led_com = match serialport::new("COM21", 115200)
         .data_bits(DataBits::Eight)
         .flow_control(FlowControl::None)
         .stop_bits(StopBits::One)
         .parity(Parity::None)
-        .timeout(Duration::from_secs(100))
+        .timeout(Duration::from_secs(5))
         .open()
-        .expect("Failed to open port");
+    {
+        Ok(x) => x,
+        Err(e) => {
+            eprintln!("Failed to write to serial port, check for hidden drivers, check device is set to COM21 port, try reinstalling driver. Error message: {}", e);
+            println!("Press any key to exit");
+            let _ = io::stdin().read_line(&mut String::new());
+            panic!("exiting");
+        }
+    };
 
     packet_data
         .iter()
